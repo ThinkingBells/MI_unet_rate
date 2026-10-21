@@ -54,7 +54,8 @@ function decorateComboDraw(widget) {
             if (this.__miDecorating || !r) return orig.apply(this, args);
             const real = this.value;
             this.__miDecorating = true;
-            this.value = `${real}  ${starsText(r)}`;
+            // al davant: el nom es trunca per la dreta i les estrelles s'haurien d'amagar
+            this.value = `${starsText(r)}  ${real}`;
             try {
                 return orig.apply(this, args);
             } finally {
@@ -75,7 +76,7 @@ function decorateMenu(menu) {
         const span = document.createElement("span");
         span.className = "mi-stars";
         span.textContent = starsText(r);
-        span.style.cssText = "margin-left:10px;color:#ffc107;white-space:nowrap;float:right;";
+        span.style.cssText = "margin-left:12px;color:#ffc107;white-space:nowrap;";
         entry.appendChild(span);
     }
 }
