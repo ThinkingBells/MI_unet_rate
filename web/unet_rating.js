@@ -93,16 +93,20 @@ function decorateComboDraw(widget) {
 
 // Afegeix les estrelles al final de cada entrada de la llista desplegable.
 function decorateMenu(menu) {
-    for (const entry of menu.querySelectorAll(".litemenu-entry")) {
-        if (entry.querySelector(".mi-stars")) continue;
-        const name = entry.dataset.value ?? entry.textContent.trim();
-        const r = ratings[name];
-        if (!r) continue;
+    const entries = [...menu.querySelectorAll(".litemenu-entry")].filter((e) => !e.querySelector(".mi-stars"));
+    const nameOf = (e) => e.dataset.value ?? e.textContent.trim();
+    // només si el menú conté algun model valorat (evita tocar altres menús)
+    if (!entries.some((e) => ratings[nameOf(e)])) return;
+    for (const entry of entries) {
+        const r = ratings[nameOf(entry)] || 0;
         const span = document.createElement("span");
         span.className = "mi-stars";
-        span.textContent = starsText(r);
-        span.style.cssText = "margin-left:12px;color:#ffc107;white-space:nowrap;";
-        entry.appendChild(span);
+        // sense valoració: espai invisible perquè els noms quedin alineats
+        span.textContent = starsText(r || 5);
+        span.style.cssText =
+            "margin-right:12px;white-space:nowrap;font-family:monospace;" +
+            (r ? "color:#ffc107;" : "visibility:hidden;");
+        entry.prepend(span);
     }
 }
 
