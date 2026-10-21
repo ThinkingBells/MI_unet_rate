@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import tempfile
 import threading
@@ -81,7 +81,7 @@ async def set_rating(request):
 
 
 NODE_CLASS_MAPPINGS = {"UNETLoaderRated": UNETLoaderRated}
-NODE_DISPLAY_NAME_MAPPINGS = {"UNETLoaderRated": "Load UNET (Rated ★)"}
+NODE_DISPLAY_NAME_MAPPINGS = {"UNETLoaderRated": "Load UNET (Rated â˜…)"}
 WEB_DIRECTORY = "./web"
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
