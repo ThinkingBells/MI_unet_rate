@@ -42,11 +42,56 @@ function starPath(ctx, cx, cy, r) {
     ctx.closePath();
 }
 
+const starsText = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+
+// Dibuixa el combo amb les estrelles al final del nom (només mentre pinta).
+function decorateComboDraw(widget) {
+    for (const key of ["draw", "drawWidget"]) {
+        const orig = widget[key];
+        if (typeof orig !== "function") continue;
+        widget[key] = function (...args) {
+            const r = ratings[this.value];
+            if (this.__miDecorating || !r) return orig.apply(this, args);
+            const real = this.value;
+            this.__miDecorating = true;
+            this.value = `${real}  ${starsText(r)}`;
+            try {
+                return orig.apply(this, args);
+            } finally {
+                this.value = real;
+                this.__miDecorating = false;
+            }
+        };
+    }
+}
+
+// Afegeix les estrelles al final de cada entrada de la llista desplegable.
+function decorateMenu(menu) {
+    for (const entry of menu.querySelectorAll(".litemenu-entry")) {
+        if (entry.querySelector(".mi-stars")) continue;
+        const name = entry.dataset.value ?? entry.textContent.trim();
+        const r = ratings[name];
+        if (!r) continue;
+        const span = document.createElement("span");
+        span.className = "mi-stars";
+        span.textContent = starsText(r);
+        span.style.cssText = "margin-left:10px;color:#ffc107;white-space:nowrap;float:right;";
+        entry.appendChild(span);
+    }
+}
+
+function watchMenus() {
+    new MutationObserver(() => {
+        document.querySelectorAll(".litecontextmenu").forEach(decorateMenu);
+    }).observe(document.body, { childList: true, subtree: true });
+}
+
 app.registerExtension({
     name: "UNETRating.Stars",
 
     async setup() {
         await fetchRatings();
+        watchMenus();
     },
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -60,6 +105,7 @@ app.registerExtension({
             let hover = 0;
 
             const current = () => ratings[combo.value] || 0;
+            decorateComboDraw(combo);
 
             const widget = {
                 name: "rating",
