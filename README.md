@@ -8,3 +8,4 @@ Node **MI_unet_rate** (categoria `advanced/loaders`).
 
 ## Instal·lació
 Copia la carpeta `MI_unet_rate` a `ComfyUI/custom_nodes/` i reinicia ComfyUI.
+- Sota les estrelles hi ha un camp de **nota personal** d'una sola línia per model (clic per editar). Es desa a `notes.json`.

@@ -30,6 +30,31 @@ async function saveRating(name, rating) {
     }
 }
 
+let notes = {};
+
+async function fetchNotes() {
+    try {
+        const r = await api.fetchApi("/unet_rating/notes");
+        notes = await r.json();
+    } catch (e) {
+        console.warn("[UNET Rating] no s'han pogut carregar les notes", e);
+    }
+}
+
+async function saveNote(name, note) {
+    if (note) notes[name] = note;
+    else delete notes[name];
+    try {
+        await api.fetchApi("/unet_rating/note", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, note }),
+        });
+    } catch (e) {
+        console.warn("[UNET Rating] error desant la nota", e);
+    }
+}
+
 function starPath(ctx, cx, cy, r) {
     ctx.beginPath();
     for (let i = 0; i < 10; i++) {
@@ -162,6 +187,31 @@ app.registerExtension({
 
             node.addCustomWidget(widget);
 
+            // nota personal d'una sola línia, guardada per model
+            const noteWidget = node.addWidget(
+                "text",
+                "nota",
+                "",
+                (value) => {
+                    const clean = String(value ?? "").replace(/\s+/g, " ").trim();
+                    noteWidget.value = clean;
+                    saveNote(combo.value, clean);
+                },
+                { serialize: false }
+            );
+            noteWidget.serialize = false;
+
+            // mantén la nota sincronitzada amb el model triat (també en carregar un workflow)
+            let shownFor = null;
+            const drawStars = widget.draw;
+            widget.draw = function (...args) {
+                if (shownFor !== combo.value) {
+                    shownFor = combo.value;
+                    noteWidget.value = notes[combo.value] || "";
+                }
+                return drawStars.apply(this, args);
+            };
+
             // repinta les estrelles quan canvia el model triat
             const cb = combo.callback;
             combo.callback = function () {
@@ -169,7 +219,10 @@ app.registerExtension({
                 node.setDirtyCanvas(true);
             };
 
-            fetchRatings().then(() => node.setDirtyCanvas(true));
+            Promise.all([fetchRatings(), fetchNotes()]).then(() => {
+                shownFor = null;
+                node.setDirtyCanvas(true);
+            });
         };
     },
 });

@@ -23,20 +23,24 @@ def _unet_list():
     return sorted(set(names)) or ["(cap model trobat)"]
 
 
-def _load_ratings():
+NOTES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "notes.json")
+MAX_NOTE = 300
+
+
+def _load_ratings(path=RATINGS_FILE):
     try:
-        with open(RATINGS_FILE, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return data if isinstance(data, dict) else {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 
-def _save_ratings(data):
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(RATINGS_FILE), suffix=".tmp")
+def _save_ratings(data, path=RATINGS_FILE):
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    os.replace(tmp, RATINGS_FILE)
+    os.replace(tmp, path)
 
 
 class UNETLoaderRated:
@@ -78,6 +82,30 @@ async def set_rating(request):
             data[name] = rating
         _save_ratings(data)
     return web.json_response({"name": name, "rating": rating})
+
+
+@PromptServer.instance.routes.get("/unet_rating/notes")
+async def get_notes(request):
+    with _lock:
+        return web.json_response(_load_ratings(NOTES_FILE))
+
+
+@PromptServer.instance.routes.post("/unet_rating/note")
+async def set_note(request):
+    body = await request.json()
+    name = body.get("name")
+    note = body.get("note")
+    if not isinstance(name, str) or not isinstance(note, str):
+        return web.json_response({"error": "dades invalides"}, status=400)
+    note = " ".join(note.split())[:MAX_NOTE]
+    with _lock:
+        data = _load_ratings(NOTES_FILE)
+        if note:
+            data[name] = note
+        else:
+            data.pop(name, None)
+        _save_ratings(data, NOTES_FILE)
+    return web.json_response({"name": name, "note": note})
 
 
 NODE_CLASS_MAPPINGS = {"UNETLoaderRated": UNETLoaderRated}
