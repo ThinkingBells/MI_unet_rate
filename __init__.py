@@ -61,27 +61,46 @@ class UNETLoaderRated:
         return comfy_nodes.UNETLoader().load_unet(unet_name, weight_dtype)
 
 
+def _normalize(value):
+    """Valor desat -> {"stars": 0-3, "crown": bool}. Accepta el format antic (enter)."""
+    if isinstance(value, dict):
+        stars = value.get("stars", 0)
+        stars = stars if isinstance(stars, int) and not isinstance(stars, bool) else 0
+        return {"stars": max(0, min(stars, 3)), "crown": bool(value.get("crown"))}
+    if isinstance(value, int) and not isinstance(value, bool):
+        # escala antiga: 1-3 = estrelles, 4 o més (top) = 3 estrelles + corona
+        return {"stars": min(value, 3), "crown": value >= 4}
+    return {"stars": 0, "crown": False}
+
+
 @PromptServer.instance.routes.get("/unet_rating/ratings")
 async def get_ratings(request):
     with _lock:
-        return web.json_response(_load_ratings())
+        return web.json_response({k: _normalize(v) for k, v in _load_ratings().items()})
 
 
 @PromptServer.instance.routes.post("/unet_rating/rate")
 async def set_rating(request):
     body = await request.json()
     name = body.get("name")
-    rating = body.get("rating")
-    if not isinstance(name, str) or not isinstance(rating, int) or not 0 <= rating <= 4:
+    stars = body.get("stars")
+    crown = body.get("crown")
+    if (
+        not isinstance(name, str)
+        or not isinstance(stars, int)
+        or isinstance(stars, bool)
+        or not 0 <= stars <= 3
+        or not isinstance(crown, bool)
+    ):
         return web.json_response({"error": "dades invalides"}, status=400)
     with _lock:
         data = _load_ratings()
-        if rating == 0:
+        if stars == 0 and not crown:
             data.pop(name, None)
         else:
-            data[name] = rating
+            data[name] = {"stars": stars, "crown": crown}
         _save_ratings(data)
-    return web.json_response({"name": name, "rating": rating})
+    return web.json_response({"name": name, "stars": stars, "crown": crown})
 
 
 @PromptServer.instance.routes.get("/unet_rating/notes")

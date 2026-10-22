@@ -3,7 +3,7 @@
 Node **MI_unet_rate** (categoria `advanced/loaders`).
 
 - Llista els models de `models/diffusion_models` (i `models/unet`).
-- Fila de 3 estrelles + corona (la millor nota) sota el desplegable: clic = valorar el model seleccionat; clic a l'estrella ja activa = esborrar la valoració.
+- Fila de 3 estrelles + corona, independents (es poden combinar: p. ex. 3 estrelles i corona). Clic = valorar el model seleccionat; clic a l'estrella activa = esborrar les estrelles; clic a la corona = posar-la/treure-la.
 - Les valoracions es desen a `ratings.json` dins la carpeta del node (persistents i compartides entre workflows).
 
 ## Instal·lació
