@@ -173,9 +173,9 @@ app.registerExtension({
                 computeSize: (width) => [width, STAR + 10],
                 draw(ctx, _node, width, y) {
                     const cur = current();
-                    // en passar per sobre, les estrelles previsualitzen la nota; la corona només s'il·lumina ella sola
+                    // en passar per sobre, les estrelles previsualitzen la nota; la corona sempre mostra l'estat real
                     const starsShown = hover && hover < CROWN ? hover : cur.stars;
-                    const crownShown = hover === CROWN ? !cur.crown : cur.crown;
+                    const crownShown = cur.crown;
                     const x0 = rowX0(width);
                     const cy = y + (STAR + 10) / 2;
                     for (let i = 0; i < SLOTS; i++) {
@@ -183,9 +183,10 @@ app.registerExtension({
                         const lit = i === CROWN - 1 ? crownShown : i < starsShown;
                         if (i === CROWN - 1) crownPath(ctx, cx, cy, STAR / 2);
                         else starPath(ctx, cx, cy, STAR / 2);
-                        ctx.fillStyle = lit ? "#ffc107" : "#3a3a3a";
+                        const hot = i === CROWN - 1 && hover === CROWN;
+                        ctx.fillStyle = lit ? "#ffc107" : hot ? "#5a5a5a" : "#3a3a3a";
                         ctx.fill();
-                        ctx.strokeStyle = lit ? "#b38600" : "#666";
+                        ctx.strokeStyle = lit ? "#b38600" : hot ? "#aaa" : "#666";
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
