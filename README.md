@@ -1,6 +1,6 @@
-# MI_unet_rate
+# MI Unet Rate
 
-Node **MI_unet_rate** (categoria `advanced/loaders`).
+Node **MI Unet Rate** (categoria `advanced/loaders`).
 
 - Llista els models de `models/diffusion_models` (i `models/unet`).
 - Fila de 3 estrelles sota el desplegable. Clic = valorar el model seleccionat; clic a l'última estrella activa = treu-ne una (la primera la deixa a 0).

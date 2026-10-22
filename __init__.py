@@ -128,7 +128,7 @@ async def set_note(request):
 
 
 NODE_CLASS_MAPPINGS = {"UNETLoaderRated": UNETLoaderRated}
-NODE_DISPLAY_NAME_MAPPINGS = {"UNETLoaderRated": "MI_unet_rate"}
+NODE_DISPLAY_NAME_MAPPINGS = {"UNETLoaderRated": "MI Unet Rate"}
 WEB_DIRECTORY = "./web"
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
