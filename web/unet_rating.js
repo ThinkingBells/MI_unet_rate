@@ -89,13 +89,6 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.closePath();
 }
 
-function fitText(ctx, text, maxW) {
-    if (ctx.measureText(text).width <= maxW) return text;
-    let t = text;
-    while (t.length > 1 && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
-    return t + "…";
-}
-
 const starsText = (n) => "★".repeat(n) + "☆".repeat(SLOTS - n);
 
 // Dibuixa el combo amb les estrelles al final del nom (només mentre pinta).
@@ -190,7 +183,11 @@ app.registerExtension({
                     ctx.textAlign = "left";
                     const note = notes[combo.value] || "";
                     ctx.fillStyle = note ? "#ddd" : "#777";
-                    ctx.fillText(fitText(ctx, note || "comments", fw - 20), MARGIN + 10, cy);
+                    // el text comença a l'esquerra i flueix cap a la dreta; el que no hi cap es retalla a la vora
+                    ctx.beginPath();
+                    ctx.rect(MARGIN + 10, y, fw - 20, ROW_H);
+                    ctx.clip();
+                    ctx.fillText(note || "comments", MARGIN + 10, cy);
                     ctx.restore();
 
                     // estrelles a la dreta (sempre la nota real; el ratolí només ressalta la icona)
