@@ -205,7 +205,7 @@ app.registerExtension({
             // nota personal d'una sola línia, guardada per model
             const noteWidget = node.addWidget(
                 "text",
-                "nota",
+                "observations",
                 "",
                 (value) => {
                     const clean = String(value ?? "").replace(/\s+/g, " ").trim();
