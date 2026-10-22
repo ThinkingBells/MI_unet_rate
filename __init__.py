@@ -20,11 +20,12 @@ def _unet_list():
             names += folder_paths.get_filename_list(folder)
         except Exception:
             pass
-    return sorted(set(names)) or ["(cap model trobat)"]
+    return sorted(set(names)) or [NO_MODELS]
 
 
 NOTES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "notes.json")
 MAX_NOTE = 300
+NO_MODELS = "(cap model trobat)"
 
 
 def _load_ratings(path=RATINGS_FILE):
@@ -91,6 +92,7 @@ async def set_rating(request):
         or not isinstance(stars, int)
         or isinstance(stars, bool)
         or not 0 <= stars <= 3
+        or name == NO_MODELS
     ):
         return web.json_response({"error": "dades invalides"}, status=400)
     with _lock:
@@ -114,7 +116,7 @@ async def set_note(request):
     body = await request.json()
     name = body.get("name")
     note = body.get("note")
-    if not isinstance(name, str) or not isinstance(note, str):
+    if not isinstance(name, str) or not isinstance(note, str) or name == NO_MODELS:
         return web.json_response({"error": "dades invalides"}, status=400)
     note = " ".join(note.split())[:MAX_NOTE]
     with _lock:
