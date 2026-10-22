@@ -173,8 +173,8 @@ app.registerExtension({
                 computeSize: (width) => [width, STAR + 10],
                 draw(ctx, _node, width, y) {
                     const cur = current();
-                    // en passar per sobre, les estrelles previsualitzen la nota; la corona sempre mostra l'estat real
-                    const starsShown = hover && hover < CROWN ? hover : cur.stars;
+                    // sempre mostra l'estat real (el mateix que el camp del nom); el ratolí només ressalta la icona
+                    const starsShown = cur.stars;
                     const crownShown = cur.crown;
                     const x0 = rowX0(width);
                     const cy = y + (STAR + 10) / 2;
@@ -183,7 +183,7 @@ app.registerExtension({
                         const lit = i === CROWN - 1 ? crownShown : i < starsShown;
                         if (i === CROWN - 1) crownPath(ctx, cx, cy, STAR / 2);
                         else starPath(ctx, cx, cy, STAR / 2);
-                        const hot = i === CROWN - 1 && hover === CROWN;
+                        const hot = hover === i + 1;
                         ctx.fillStyle = lit ? "#ffc107" : hot ? "#5a5a5a" : "#3a3a3a";
                         ctx.fill();
                         ctx.strokeStyle = lit ? "#b38600" : hot ? "#aaa" : "#666";
