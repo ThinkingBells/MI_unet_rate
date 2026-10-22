@@ -53,4 +53,4 @@ Both files are created in the node folder the first time you rate or comment a m
 
 ## License
 
-No license has been chosen yet. Until one is added, all rights are reserved by the author.
+[MIT](LICENSE) © 2026 Thinkingbells
