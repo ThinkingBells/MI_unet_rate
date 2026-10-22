@@ -199,7 +199,7 @@ app.registerExtension({
                         starPath(ctx, x0 + slotX(i) + STAR / 2, cy, STAR / 2);
                         ctx.fillStyle = lit ? "#E0702D" : hot ? "#5a5a5a" : "#3a3a3a";
                         ctx.fill();
-                        ctx.strokeStyle = lit ? "#9c4a16" : hot ? "#aaa" : "#666";
+                        ctx.strokeStyle = lit ? "#FFFFFF" : hot ? "#aaa" : "#666";
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
