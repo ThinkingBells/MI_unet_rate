@@ -195,9 +195,8 @@ app.registerExtension({
                     const x0 = starsX0(width);
                     for (let i = 0; i < SLOTS; i++) {
                         const lit = i < shown;
-                        const hot = hover === i + 1;
                         starPath(ctx, x0 + slotX(i) + STAR / 2, cy, STAR / 2);
-                        ctx.fillStyle = lit ? "#E0702D" : hot ? "#5a5a5a" : "#3a3a3a";
+                        ctx.fillStyle = lit ? "#E0702D" : "#3A3A3A";
                         ctx.fill();
                         ctx.strokeStyle = "#FFFFFF";
                         ctx.lineWidth = 1;
