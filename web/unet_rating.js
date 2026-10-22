@@ -216,8 +216,8 @@ app.registerExtension({
                             // la corona s'activa/desactiva sense tocar les estrelles
                             saveRating(combo.value, cur.stars, !cur.crown);
                         } else {
-                            // clic sobre l'estrella ja activa = esborrar les estrelles
-                            saveRating(combo.value, idx === cur.stars ? 0 : idx, cur.crown);
+                            // clic a l'última estrella activa = treu-ne una; altrament fixa aquesta nota
+                            saveRating(combo.value, idx === cur.stars ? idx - 1 : idx, cur.crown);
                         }
                         node.setDirtyCanvas(true);
                         return true;
