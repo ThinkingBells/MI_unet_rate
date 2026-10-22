@@ -123,11 +123,16 @@ function decorateMenu(menu) {
         const r = ratings[nameOf(entry)] || 0;
         const span = document.createElement("span");
         span.className = "mi-stars";
-        // sense valoració: espai invisible perquè els noms quedin alineats
-        span.textContent = starsText(r || SLOTS);
-        span.style.cssText =
-            "margin-right:12px;white-space:nowrap;font-family:monospace;" +
-            (r ? "color:#E0702D;" : "visibility:hidden;");
+        span.style.cssText = "margin-right:12px;white-space:nowrap;font-family:monospace;";
+        // estrelles omplertes en taronja i buides en granat; sense valoració, espai invisible per alinear els noms
+        const on = document.createElement("span");
+        on.textContent = "★".repeat(r);
+        on.style.color = "#E0702D";
+        const off = document.createElement("span");
+        off.textContent = "☆".repeat(SLOTS - r);
+        off.style.color = "#791718";
+        span.append(on, off);
+        if (!r) span.style.visibility = "hidden";
         entry.prepend(span);
     }
 }
