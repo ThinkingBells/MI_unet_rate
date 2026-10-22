@@ -11,6 +11,8 @@ async function fetchRatings() {
     try {
         const r = await api.fetchApi("/unet_rating/ratings");
         ratings = await r.json();
+        // valoracions antigues (escala de 5) es limiten a la corona
+        for (const k in ratings) ratings[k] = Math.min(ratings[k], 4);
     } catch (e) {
         console.warn("[UNET Rating] no s'han pogut carregar les valoracions", e);
     }
@@ -67,7 +69,29 @@ function starPath(ctx, cx, cy, r) {
     ctx.closePath();
 }
 
-const starsText = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+// valoració 1-3 = estrelles, 4 = corona (la millor nota)
+const CROWN = 4;
+const SLOTS = 4;
+const SLOT_GAP = 10; // espai extra abans de la corona
+
+function crownPath(ctx, cx, cy, r) {
+    const w = r * 1.0, h = r * 0.8;
+    const l = cx - w, rt = cx + w, top = cy - h, bot = cy + h;
+    ctx.beginPath();
+    ctx.moveTo(l, bot);
+    ctx.lineTo(l, top + h * 0.2);
+    ctx.lineTo(cx - w * 0.5, cy);
+    ctx.lineTo(cx, top);
+    ctx.lineTo(cx + w * 0.5, cy);
+    ctx.lineTo(rt, top + h * 0.2);
+    ctx.lineTo(rt, bot);
+    ctx.closePath();
+}
+
+const slotX = (i) => i * (STAR + GAP) + (i === CROWN - 1 ? SLOT_GAP : 0);
+const rowX0 = (width) => (width - slotX(SLOTS - 1) - STAR) / 2;
+
+const starsText = (n) => (n >= CROWN ? "👑" : "★".repeat(n) + "☆".repeat(3 - n));
 
 // Dibuixa el combo amb les estrelles al final del nom (només mentre pinta).
 function decorateComboDraw(widget) {
@@ -102,7 +126,7 @@ function decorateMenu(menu) {
         const span = document.createElement("span");
         span.className = "mi-stars";
         // sense valoració: espai invisible perquè els noms quedin alineats
-        span.textContent = starsText(r || 5);
+        span.textContent = starsText(r || 3);
         span.style.cssText =
             "margin-right:12px;white-space:nowrap;font-family:monospace;" +
             (r ? "color:#ffc107;" : "visibility:hidden;");
@@ -146,24 +170,29 @@ app.registerExtension({
                 computeSize: (width) => [width, STAR + 10],
                 draw(ctx, _node, width, y) {
                     const shown = hover || current();
-                    const total = 5 * STAR + 4 * GAP;
-                    const x0 = (width - total) / 2;
+                    const x0 = rowX0(width);
                     const cy = y + (STAR + 10) / 2;
-                    for (let i = 0; i < 5; i++) {
-                        starPath(ctx, x0 + i * (STAR + GAP) + STAR / 2, cy, STAR / 2);
-                        ctx.fillStyle = i < shown ? "#ffc107" : "#3a3a3a";
+                    for (let i = 0; i < SLOTS; i++) {
+                        const cx = x0 + slotX(i) + STAR / 2;
+                        const lit = i === CROWN - 1 ? shown === CROWN : shown < CROWN && i < shown;
+                        if (i === CROWN - 1) crownPath(ctx, cx, cy, STAR / 2);
+                        else starPath(ctx, cx, cy, STAR / 2);
+                        ctx.fillStyle = lit ? "#ffc107" : "#3a3a3a";
                         ctx.fill();
-                        ctx.strokeStyle = i < shown ? "#b38600" : "#666";
+                        ctx.strokeStyle = lit ? "#b38600" : "#666";
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
                 },
                 mouse(event, pos) {
                     const width = node.size[0];
-                    const total = 5 * STAR + 4 * GAP;
-                    const x0 = (width - total) / 2;
-                    const idx = Math.floor((pos[0] - x0) / (STAR + GAP)) + 1;
-                    const inside = idx >= 1 && idx <= 5 && pos[0] >= x0 && pos[0] <= x0 + total;
+                    const x0 = rowX0(width);
+                    let idx = 0;
+                    for (let i = 0; i < SLOTS; i++) {
+                        const sx = x0 + slotX(i);
+                        if (pos[0] >= sx - GAP / 2 && pos[0] <= sx + STAR + GAP / 2) idx = i + 1;
+                    }
+                    const inside = idx > 0;
 
                     if (event.type === "pointermove" || event.type === "mousemove") {
                         const h = inside ? idx : 0;

@@ -72,7 +72,7 @@ async def set_rating(request):
     body = await request.json()
     name = body.get("name")
     rating = body.get("rating")
-    if not isinstance(name, str) or not isinstance(rating, int) or not 0 <= rating <= 5:
+    if not isinstance(name, str) or not isinstance(rating, int) or not 0 <= rating <= 4:
         return web.json_response({"error": "dades invalides"}, status=400)
     with _lock:
         data = _load_ratings()
