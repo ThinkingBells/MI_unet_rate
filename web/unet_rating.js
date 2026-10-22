@@ -166,7 +166,9 @@ app.registerExtension({
                 serialize: false,
                 options: { serialize: false },
                 computeSize: (width) => [width, ROW_H],
-                draw(ctx, _node, width, y) {
+                draw(ctx, _node, _w, y) {
+                    // usa sempre l'amplada real del node (el paràmetre pot venir reduït després d'alguns repintats)
+                    const width = node.size[0];
                     const cy = y + ROW_H / 2;
 
                     // camp de comentaris (una línia) a l'esquerra
