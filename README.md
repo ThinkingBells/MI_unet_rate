@@ -4,6 +4,8 @@ A UNET / diffusion-model loader for [ComfyUI](https://github.com/comfyanonymous/
 
 If you keep dozens of checkpoints and fine-tunes in your `diffusion_models` folder, file names alone are not enough to remember which ones are worth using. MI Unet Rate keeps your own judgement next to each model, so you can see it at a glance every time you open the list.
 
+![MI Unet Rate node](docs/screenshot.png)
+
 ## Features
 
 - **Rate each model from 1 to 3 stars.** One click on the row under the model selector; the rating is remembered for that model.
