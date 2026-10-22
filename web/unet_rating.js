@@ -16,14 +16,14 @@ async function fetchRatings() {
     }
 }
 
-async function saveRating(name, stars, crown) {
-    if (stars || crown) ratings[name] = { stars, crown };
+async function saveRating(name, stars) {
+    if (stars) ratings[name] = stars;
     else delete ratings[name];
     try {
         await api.fetchApi("/unet_rating/rate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, stars, crown }),
+            body: JSON.stringify({ name, stars }),
         });
     } catch (e) {
         console.warn("[UNET Rating] error desant la valoració", e);
@@ -67,30 +67,13 @@ function starPath(ctx, cx, cy, r) {
     ctx.closePath();
 }
 
-// valoració = 0-3 estrelles + corona (independents, es poden combinar)
-const CROWN = 4; // posició de la corona a la fila
-const SLOTS = 4;
-const SLOT_GAP = 10; // espai extra abans de la corona
+// valoració = 0-3 estrelles
+const SLOTS = 3;
 
-function crownPath(ctx, cx, cy, r) {
-    const w = r * 1.0, h = r * 0.8;
-    const l = cx - w, rt = cx + w, top = cy - h, bot = cy + h;
-    ctx.beginPath();
-    ctx.moveTo(l, bot);
-    ctx.lineTo(l, top + h * 0.2);
-    ctx.lineTo(cx - w * 0.5, cy);
-    ctx.lineTo(cx, top);
-    ctx.lineTo(cx + w * 0.5, cy);
-    ctx.lineTo(rt, top + h * 0.2);
-    ctx.lineTo(rt, bot);
-    ctx.closePath();
-}
-
-const slotX = (i) => i * (STAR + GAP) + (i === CROWN - 1 ? SLOT_GAP : 0);
+const slotX = (i) => i * (STAR + GAP);
 const rowX0 = (width) => (width - slotX(SLOTS - 1) - STAR) / 2;
 
-const starsOnly = (n) => "★".repeat(n) + "☆".repeat(3 - n);
-const starsText = (r) => (r.crown ? "👑" : "") + starsOnly(r.stars);
+const starsText = (n) => "★".repeat(n) + "☆".repeat(SLOTS - n);
 
 // Dibuixa el combo amb les estrelles al final del nom (només mentre pinta).
 function decorateComboDraw(widget) {
@@ -121,18 +104,14 @@ function decorateMenu(menu) {
     // només si el menú conté algun model valorat (evita tocar altres menús)
     if (!entries.some((e) => ratings[nameOf(e)])) return;
     for (const entry of entries) {
-        const r = ratings[nameOf(entry)];
+        const r = ratings[nameOf(entry)] || 0;
         const span = document.createElement("span");
         span.className = "mi-stars";
-        span.style.cssText = "margin-right:12px;white-space:nowrap;font-family:monospace;";
-        // la corona i les estrelles sense valorar reserven espai (invisible) per alinear els noms
-        const crown = document.createElement("span");
-        crown.textContent = "👑";
-        crown.style.cssText = "margin-right:4px;" + (r?.crown ? "" : "visibility:hidden;");
-        const stars = document.createElement("span");
-        stars.textContent = starsOnly(r?.stars || 3);
-        stars.style.cssText = r?.stars ? "color:#ffc107;" : "visibility:hidden;";
-        span.append(crown, stars);
+        // sense valoració: espai invisible perquè els noms quedin alineats
+        span.textContent = starsText(r || SLOTS);
+        span.style.cssText =
+            "margin-right:12px;white-space:nowrap;font-family:monospace;" +
+            (r ? "color:#ffc107;" : "visibility:hidden;");
         entry.prepend(span);
     }
 }
@@ -161,7 +140,7 @@ app.registerExtension({
             const combo = node.widgets.find((w) => w.name === "unet_name");
             let hover = 0;
 
-            const current = () => ratings[combo.value] || { stars: 0, crown: false };
+            const current = () => ratings[combo.value] || 0;
             decorateComboDraw(combo);
 
             const widget = {
@@ -172,17 +151,14 @@ app.registerExtension({
                 options: { serialize: false },
                 computeSize: (width) => [width, STAR + 10],
                 draw(ctx, _node, width, y) {
-                    const cur = current();
-                    // sempre mostra l'estat real (el mateix que el camp del nom); el ratolí només ressalta la icona
-                    const starsShown = cur.stars;
-                    const crownShown = cur.crown;
+                    // sempre mostra la nota real (el mateix que el camp del nom); el ratolí només ressalta la icona
+                    const shown = current();
                     const x0 = rowX0(width);
                     const cy = y + (STAR + 10) / 2;
                     for (let i = 0; i < SLOTS; i++) {
                         const cx = x0 + slotX(i) + STAR / 2;
-                        const lit = i === CROWN - 1 ? crownShown : i < starsShown;
-                        if (i === CROWN - 1) crownPath(ctx, cx, cy, STAR / 2);
-                        else starPath(ctx, cx, cy, STAR / 2);
+                        const lit = i < shown;
+                        starPath(ctx, cx, cy, STAR / 2);
                         const hot = hover === i + 1;
                         ctx.fillStyle = lit ? "#ffc107" : hot ? "#5a5a5a" : "#3a3a3a";
                         ctx.fill();
@@ -211,14 +187,8 @@ app.registerExtension({
                     }
                     if (event.type === "pointerdown" || event.type === "mousedown") {
                         if (!inside) return false;
-                        const cur = current();
-                        if (idx === CROWN) {
-                            // la corona s'activa/desactiva sense tocar les estrelles
-                            saveRating(combo.value, cur.stars, !cur.crown);
-                        } else {
-                            // clic a l'última estrella activa = treu-ne una; altrament fixa aquesta nota
-                            saveRating(combo.value, idx === cur.stars ? idx - 1 : idx, cur.crown);
-                        }
+                        // clic a l'última estrella activa = treu-ne una; altrament fixa aquesta nota
+                        saveRating(combo.value, idx === current() ? idx - 1 : idx);
                         node.setDirtyCanvas(true);
                         return true;
                     }

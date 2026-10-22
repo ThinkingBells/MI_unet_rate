@@ -62,21 +62,23 @@ class UNETLoaderRated:
 
 
 def _normalize(value):
-    """Valor desat -> {"stars": 0-3, "crown": bool}. Accepta el format antic (enter)."""
+    """Valor desat -> enter 0-3. Accepta formats d'abans (escala antiga o {"stars": n})."""
     if isinstance(value, dict):
-        stars = value.get("stars", 0)
-        stars = stars if isinstance(stars, int) and not isinstance(stars, bool) else 0
-        return {"stars": max(0, min(stars, 3)), "crown": bool(value.get("crown"))}
+        value = value.get("stars", 0)
     if isinstance(value, int) and not isinstance(value, bool):
-        # escala antiga: 1-3 = estrelles, 4 o més (top) = 3 estrelles + corona
-        return {"stars": min(value, 3), "crown": value >= 4}
-    return {"stars": 0, "crown": False}
+        return max(0, min(value, 3))
+    return 0
+
+
+def _normalized_ratings():
+    ratings = {k: _normalize(v) for k, v in _load_ratings().items()}
+    return {k: v for k, v in ratings.items() if v}
 
 
 @PromptServer.instance.routes.get("/unet_rating/ratings")
 async def get_ratings(request):
     with _lock:
-        return web.json_response({k: _normalize(v) for k, v in _load_ratings().items()})
+        return web.json_response(_normalized_ratings())
 
 
 @PromptServer.instance.routes.post("/unet_rating/rate")
@@ -84,23 +86,21 @@ async def set_rating(request):
     body = await request.json()
     name = body.get("name")
     stars = body.get("stars")
-    crown = body.get("crown")
     if (
         not isinstance(name, str)
         or not isinstance(stars, int)
         or isinstance(stars, bool)
         or not 0 <= stars <= 3
-        or not isinstance(crown, bool)
     ):
         return web.json_response({"error": "dades invalides"}, status=400)
     with _lock:
-        data = _load_ratings()
-        if stars == 0 and not crown:
+        data = _normalized_ratings()
+        if stars == 0:
             data.pop(name, None)
         else:
-            data[name] = {"stars": stars, "crown": crown}
+            data[name] = stars
         _save_ratings(data)
-    return web.json_response({"name": name, "stars": stars, "crown": crown})
+    return web.json_response({"name": name, "stars": stars})
 
 
 @PromptServer.instance.routes.get("/unet_rating/notes")
