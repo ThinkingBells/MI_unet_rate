@@ -2,8 +2,11 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
 const NODE = "UNETLoaderRated";
-const STAR = 22;
+const STAR = 18;
 const GAP = 4;
+const ROW_H = 26;
+const MARGIN = 15; // mateix marge lateral que els altres camps del node
+const FIELD_GAP = 12; // separació entre el camp de comentaris i les estrelles
 
 let ratings = {};
 
@@ -71,7 +74,27 @@ function starPath(ctx, cx, cy, r) {
 const SLOTS = 3;
 
 const slotX = (i) => i * (STAR + GAP);
-const rowX0 = (width) => (width - slotX(SLOTS - 1) - STAR) / 2;
+const STARS_W = slotX(SLOTS - 1) + STAR;
+// disposició de la fila: [ camp de comentaris | estrelles ]
+const starsX0 = (width) => width - MARGIN - STARS_W;
+const fieldW = (width) => starsX0(width) - FIELD_GAP - MARGIN;
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function fitText(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+    return t + "…";
+}
 
 const starsText = (n) => "★".repeat(n) + "☆".repeat(SLOTS - n);
 
@@ -149,17 +172,34 @@ app.registerExtension({
                 value: 0,
                 serialize: false,
                 options: { serialize: false },
-                computeSize: (width) => [width, STAR + 10],
+                computeSize: (width) => [width, ROW_H],
                 draw(ctx, _node, width, y) {
-                    // sempre mostra la nota real (el mateix que el camp del nom); el ratolí només ressalta la icona
+                    const cy = y + ROW_H / 2;
+
+                    // camp de comentaris (una línia) a l'esquerra
+                    const fw = fieldW(width);
+                    ctx.save();
+                    roundRect(ctx, MARGIN, y + 1, fw, ROW_H - 2, (ROW_H - 2) / 2);
+                    ctx.fillStyle = "#222";
+                    ctx.fill();
+                    ctx.strokeStyle = hover === "field" ? "#aaa" : "#555";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.font = "12px sans-serif";
+                    ctx.textBaseline = "middle";
+                    ctx.textAlign = "left";
+                    const note = notes[combo.value] || "";
+                    ctx.fillStyle = note ? "#ddd" : "#777";
+                    ctx.fillText(fitText(ctx, note || "comments", fw - 20), MARGIN + 10, cy);
+                    ctx.restore();
+
+                    // estrelles a la dreta (sempre la nota real; el ratolí només ressalta la icona)
                     const shown = current();
-                    const x0 = rowX0(width);
-                    const cy = y + (STAR + 10) / 2;
+                    const x0 = starsX0(width);
                     for (let i = 0; i < SLOTS; i++) {
-                        const cx = x0 + slotX(i) + STAR / 2;
                         const lit = i < shown;
-                        starPath(ctx, cx, cy, STAR / 2);
                         const hot = hover === i + 1;
+                        starPath(ctx, x0 + slotX(i) + STAR / 2, cy, STAR / 2);
                         ctx.fillStyle = lit ? "#ffc107" : hot ? "#5a5a5a" : "#3a3a3a";
                         ctx.fill();
                         ctx.strokeStyle = lit ? "#b38600" : hot ? "#aaa" : "#666";
@@ -169,26 +209,40 @@ app.registerExtension({
                 },
                 mouse(event, pos) {
                     const width = node.size[0];
-                    const x0 = rowX0(width);
-                    let idx = 0;
+                    const x0 = starsX0(width);
+                    let target = 0;
                     for (let i = 0; i < SLOTS; i++) {
                         const sx = x0 + slotX(i);
-                        if (pos[0] >= sx - GAP / 2 && pos[0] <= sx + STAR + GAP / 2) idx = i + 1;
+                        if (pos[0] >= sx - GAP / 2 && pos[0] <= sx + STAR + GAP / 2) target = i + 1;
                     }
-                    const inside = idx > 0;
+                    if (!target && pos[0] >= MARGIN && pos[0] <= MARGIN + fieldW(width)) target = "field";
 
                     if (event.type === "pointermove" || event.type === "mousemove") {
-                        const h = inside ? idx : 0;
-                        if (h !== hover) {
-                            hover = h;
+                        if (target !== hover) {
+                            hover = target;
                             node.setDirtyCanvas(true);
                         }
                         return false;
                     }
                     if (event.type === "pointerdown" || event.type === "mousedown") {
-                        if (!inside) return false;
+                        if (!target) return false;
+                        if (target === "field") {
+                            const name = combo.value;
+                            const done = (value) => {
+                                const clean = String(value ?? "").replace(/\s+/g, " ").trim();
+                                saveNote(name, clean);
+                                node.setDirtyCanvas(true);
+                            };
+                            const old = notes[name] || "";
+                            if (app.canvas?.prompt) app.canvas.prompt("comments", old, done, event);
+                            else {
+                                const v = window.prompt("comments", old);
+                                if (v !== null) done(v);
+                            }
+                            return true;
+                        }
                         // clic a l'última estrella activa = treu-ne una; altrament fixa aquesta nota
-                        saveRating(combo.value, idx === current() ? idx - 1 : idx);
+                        saveRating(combo.value, target === current() ? target - 1 : target);
                         node.setDirtyCanvas(true);
                         return true;
                     }
@@ -202,31 +256,6 @@ app.registerExtension({
 
             node.addCustomWidget(widget);
 
-            // nota personal d'una sola línia, guardada per model
-            const noteWidget = node.addWidget(
-                "text",
-                "comments",
-                "",
-                (value) => {
-                    const clean = String(value ?? "").replace(/\s+/g, " ").trim();
-                    noteWidget.value = clean;
-                    saveNote(combo.value, clean);
-                },
-                { serialize: false }
-            );
-            noteWidget.serialize = false;
-
-            // mantén la nota sincronitzada amb el model triat (també en carregar un workflow)
-            let shownFor = null;
-            const drawStars = widget.draw;
-            widget.draw = function (...args) {
-                if (shownFor !== combo.value) {
-                    shownFor = combo.value;
-                    noteWidget.value = notes[combo.value] || "";
-                }
-                return drawStars.apply(this, args);
-            };
-
             // repinta les estrelles quan canvia el model triat
             const cb = combo.callback;
             combo.callback = function () {
@@ -234,10 +263,7 @@ app.registerExtension({
                 node.setDirtyCanvas(true);
             };
 
-            Promise.all([fetchRatings(), fetchNotes()]).then(() => {
-                shownFor = null;
-                node.setDirtyCanvas(true);
-            });
+            Promise.all([fetchRatings(), fetchNotes()]).then(() => node.setDirtyCanvas(true));
         };
     },
 });
