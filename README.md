@@ -27,7 +27,7 @@ Then reload the browser tab (Ctrl+F5) so the new interface code is loaded.
 
 ## Usage
 
-1. Double-click the canvas, search for **MI Unet Rate** (it is also under `advanced/loaders`) and add the node.
+1. Double-click the canvas, search for **MI Unet Rate** (category `MI nodes`) and add the node.
 2. Pick a model in `unet_name`.
 3. In the row below the selectors:
    - **Stars (right):** click star 1, 2 or 3 to set the rating. Clicking the last active star removes one star, so you can lower the rating or clear it completely.

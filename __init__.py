@@ -56,7 +56,7 @@ class UNETLoaderRated:
 
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "load_unet"
-    CATEGORY = "advanced/loaders"
+    CATEGORY = "MI nodes"
 
     def load_unet(self, unet_name, weight_dtype):
         return comfy_nodes.UNETLoader().load_unet(unet_name, weight_dtype)
